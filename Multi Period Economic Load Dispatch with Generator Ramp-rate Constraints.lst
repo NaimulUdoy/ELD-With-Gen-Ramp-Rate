@@ -1,0 +1,588 @@
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 1
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+C o m p i l a t i o n
+
+
+   2   
+   3  Sets
+   4      g 'Generators' / g1, g2, g3 /
+   5      t 'Time periods (hours)' / t1*t24 /;
+   6   
+   7  Parameters
+   8      a(g) 'Quadratic cost coefficient ($/MW^2)' / g1 0.12, g2 0.08, g3 0.07 /
+   9      b(g) 'Linear cost coefficient ($/MW)'     / g1 20.0, g2 25.0, g3 30.0 /
+  10      c(g) 'Constant cost coefficient ($)'       / g1 500.0, g2 400.0, g3 200.0 /
+  11   
+  12      Pmin(g) 'Minimum generation capacity (MW)' / g1 20.0, g2 30.0, g3 40.0 /
+  13      Pmax(g) 'Maximum generation capacity (MW)' / g1 150.0, g2 200.0, g3 300.0 /
+  14   
+  15      UR(g)   'Ramp-up limit (MW/hour)'          / g1 30.0, g2 40.0, g3 50.0 /
+  16      DR(g)   'Ramp-down limit (MW/hour)'        / g1 30.0, g2 40.0, g3 50.0 /
+  17   
+  18      P0(g)   'Initial generator output before t1 (MW)' / g1 50.0, g2 80.0, g3 100.0 /;
+  19   
+  20  * Hourly load profile (24-hour daily demand curve)
+  21  Parameter Demand(t) 'Hourly system load demand (MW)' /
+  22      t1  220, t2  200, t3  190, t4  180, t5  200, t6  230,
+  23      t7  280, t8  340, t9  400, t10 450, t11 480, t12 490,
+  24      t13 470, t14 460, t15 450, t16 480, t17 520, t18 550,
+  25      t19 530, t20 500, t21 440, t22 380, t23 310, t24 250
+  26  /;
+  27   
+  28  Variables
+  29      Z       'Total generation cost over 24 hours ($)'
+  30      P(g,t)  'Power output of unit g at time period t (MW)';
+  31   
+  32  * Enforce individual unit capacity bounds
+  33  P.lo(g,t) = Pmin(g);
+  34  P.up(g,t) = Pmax(g);
+  35   
+  36  Equations
+  37      cost_obj         'Total daily generation cost'
+  38      power_balance(t) 'Hourly demand balance constraint'
+  39      ramp_up_init(g)  'Ramp-up constraint for the initial time step (t1)'
+  40      ramp_dn_init(g)  'Ramp-down constraint for the initial time step (t1)'
+  41      ramp_up(g,t)     'Ramp-up limit for subsequent periods (t2 to t24)'
+  42      ramp_dn(g,t)     'Ramp-down limit for subsequent periods (t2 to t24)';
+  43   
+  44  * Objective Function: Sum of costs over all generators and time periods
+  45  cost_obj..
+  46      Z =E= sum((g,t), a(g)*sqr(P(g,t)) + b(g)*P(g,t) + c(g));
+  47   
+  48  * Power Balance Constraint for each hour
+  49  power_balance(t)..
+  50      sum(g, P(g,t)) =E= Demand(t);
+  51   
+  52  * Ramp-Up Limits
+  53  ramp_up_init(g)..
+  54      P(g,'t1') - P0(g) =L= UR(g);
+  55   
+  56  ramp_up(g,t)$(ord(t) > 1)..
+  57      P(g,t) - P(g,t-1) =L= UR(g);
+  58   
+  59  * Ramp-Down Limits
+  60  ramp_dn_init(g)..
+  61      P0(g) - P(g,'t1') =L= DR(g);
+  62   
+  63  ramp_dn(g,t)$(ord(t) > 1)..
+  64      P(g,t-1) - P(g,t) =L= DR(g);
+  65   
+  66  * Model Declaration & Solve Statement
+  67  Model dynamic_economic_dispatch / all /;
+  68   
+  69  Solve dynamic_economic_dispatch using nlp minimizing Z;
+  70   
+  71  * Display Output Tables in .lst File
+  72  Display P.l, Z.l;
+  73   
+  74  * --- AUTOMATED CSV EXPORT FOR PLOTTING ---
+  75  File results / dispatch_results.csv /;
+  76  results.pw = 32767;
+  77  put results;
+  78  put "Generator,TimePeriod,PowerOutput_MW" /;
+  79  loop((g,t),
+  80      put g.tl, ",", t.tl, ",", P.l(g,t):0:2 /;
+  81  );
+  82  putclose results;
+
+
+COMPILATION TIME     =        0.016 SECONDS      3 MB  51.4.0 91cb996b WEX-WEI
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 2
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+Equation Listing    SOLVE dynamic_economic_dispatch Using NLP From line 69
+
+
+---- cost_obj  =E=  Total daily generation cost
+
+cost_obj..  Z - (24.8)*P(g1,t1) - (24.8)*P(g1,t2) - (24.8)*P(g1,t3) - (24.8)*P(g1,t4) - (24.8)*P(g1,t5) - (24.8)*P(g1,t6) - (24.8)*P(g1,t7) - (24.8)*P(g1,t8) - (24.8)*P(g1,t9) - (24.8)*P(g1,t10) - (24.8)*P(g1,t11) - (24.8)*P(g1,t12) - (24.8)*P(g1,t13) - (24.8)*P(g1,t14) - (24.8)*P(g1,t15) - (24.8)*P(g1,t16) - (24.8)*P(g1,t17) - (24.8)*P(g1,t18) - (24.8)*P(g1,t19) - (24.8)*P(g1,t20) - (24.8)*P(g1,t21) - (24.8)*P(g1,t22) - (24.8)*P(g1,t23) - (24.8)*P(g1,t24) - (29.8)*P(g2,t1) - (29.8)*P(g2,t2) - (29.8)*P(g2,t3) - (29.8)*P(g2,t4) - (29.8)*P(g2,t5) - (29.8)*P(g2,t6) - (29.8)*P(g2,t7) - (29.8)*P(g2,t8) - (29.8)*P(g2,t9) - (29.8)*P(g2,t10) - (29.8)*P(g2,t11) - (29.8)*P(g2,t12) - (29.8)*P(g2,t13) - (29.8)*P(g2,t14) - (29.8)*P(g2,t15) - (29.8)*P(g2,t16) - (29.8)*P(g2,t17) - (29.8)*P(g2,t18) - (29.8)*P(g2,t19) - (29.8)*P(g2,t20) - (29.8)*P(g2,t21) - (29.8)*P(g2,t22) - (29.8)*P(g2,t23) - (29.8)*P(g2,t24) - (35.6)*P(g3,t1) - (35.6)*P(g3,t2) - (35.6)*P(g3,t3) - (35.6)*P(g3,t4) - (35.6)*P(g3,t5) - (35.6)*P(g3,t6) - (35.6)*P(g3,t7) - (35.6)*P(g3,t8) - (35.6)*P(g3,t9) - (35.6)*P(g3,t10) - (35.6)*P(g3,t11) - (35.6)*P(g3,t12) - (35.6)*P(g3,t13) - (35.6)*P(g3,t14) - (35.6)*P(g3,t15) - (35.6)*P(g3,t16) - (35.6)*P(g3,t17) - (35.6)*P(g3,t18) - (35.6)*P(g3,t19) - (35.6)*P(g3,t20) - (35.6)*P(g3,t21) - (35.6)*P(g3,t22) - (35.6)*P(g3,t23) - (35.6)*P(g3,t24) =E= 26400 ; (LHS = -61968, INFES = 88368 ****)
+     
+
+---- power_balance  =E=  Hourly demand balance constraint
+
+power_balance(t1)..  P(g1,t1) + P(g2,t1) + P(g3,t1) =E= 220 ; (LHS = 90, INFES = 130 ****)
+     
+power_balance(t2)..  P(g1,t2) + P(g2,t2) + P(g3,t2) =E= 200 ; (LHS = 90, INFES = 110 ****)
+     
+power_balance(t3)..  P(g1,t3) + P(g2,t3) + P(g3,t3) =E= 190 ; (LHS = 90, INFES = 100 ****)
+     
+REMAINING 21 ENTRIES SKIPPED
+
+
+---- ramp_up_init  =L=  Ramp-up constraint for the initial time step (t1)
+
+ramp_up_init(g1)..  P(g1,t1) =L= 80 ; (LHS = 20)
+     
+ramp_up_init(g2)..  P(g2,t1) =L= 120 ; (LHS = 30)
+     
+ramp_up_init(g3)..  P(g3,t1) =L= 150 ; (LHS = 40)
+     
+
+---- ramp_dn_init  =L=  Ramp-down constraint for the initial time step (t1)
+
+ramp_dn_init(g1)..  - P(g1,t1) =L= -20 ; (LHS = -20)
+     
+ramp_dn_init(g2)..  - P(g2,t1) =L= -40 ; (LHS = -30, INFES = 10 ****)
+     
+ramp_dn_init(g3)..  - P(g3,t1) =L= -50 ; (LHS = -40, INFES = 10 ****)
+     
+
+---- ramp_up  =L=  Ramp-up limit for subsequent periods (t2 to t24)
+
+ramp_up(g1,t2)..  - P(g1,t1) + P(g1,t2) =L= 30 ; (LHS = 0)
+     
+ramp_up(g1,t3)..  - P(g1,t2) + P(g1,t3) =L= 30 ; (LHS = 0)
+     
+ramp_up(g1,t4)..  - P(g1,t3) + P(g1,t4) =L= 30 ; (LHS = 0)
+     
+REMAINING 66 ENTRIES SKIPPED
+
+
+---- ramp_dn  =L=  Ramp-down limit for subsequent periods (t2 to t24)
+
+ramp_dn(g1,t2)..  P(g1,t1) - P(g1,t2) =L= 30 ; (LHS = 0)
+     
+ramp_dn(g1,t3)..  P(g1,t2) - P(g1,t3) =L= 30 ; (LHS = 0)
+     
+ramp_dn(g1,t4)..  P(g1,t3) - P(g1,t4) =L= 30 ; (LHS = 0)
+     
+REMAINING 66 ENTRIES SKIPPED
+
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 3
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+Column Listing      SOLVE dynamic_economic_dispatch Using NLP From line 69
+
+
+---- Z  Total generation cost over 24 hours ($)
+
+Z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       cost_obj
+
+
+---- P  Power output of unit g at time period t (MW)
+
+P(g1,t1)
+                (.LO, .L, .UP, .M = 20, 20, 150, 0)
+     (-24.8)    cost_obj
+        1       power_balance(t1)
+        1       ramp_up_init(g1)
+       -1       ramp_dn_init(g1)
+       -1       ramp_up(g1,t2)
+        1       ramp_dn(g1,t2)
+        0       (OLD LEVEL ****)
+
+P(g1,t2)
+                (.LO, .L, .UP, .M = 20, 20, 150, 0)
+     (-24.8)    cost_obj
+        1       power_balance(t2)
+        1       ramp_up(g1,t2)
+       -1       ramp_up(g1,t3)
+       -1       ramp_dn(g1,t2)
+        1       ramp_dn(g1,t3)
+        0       (OLD LEVEL ****)
+
+P(g1,t3)
+                (.LO, .L, .UP, .M = 20, 20, 150, 0)
+     (-24.8)    cost_obj
+        1       power_balance(t3)
+        1       ramp_up(g1,t3)
+       -1       ramp_up(g1,t4)
+       -1       ramp_dn(g1,t3)
+        1       ramp_dn(g1,t4)
+        0       (OLD LEVEL ****)
+
+REMAINING 69 ENTRIES SKIPPED
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 4
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+Range Statistics    SOLVE dynamic_economic_dispatch Using NLP From line 69
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 2.000E+01, 2.640E+04]
+Bound     [min, max] : [ 2.000E+01, 3.000E+02]
+Matrix    [min, max] : [ 1.000E+00, 3.560E+01]
+
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 5
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+Model Statistics    SOLVE dynamic_economic_dispatch Using NLP From line 69
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           6     SINGLE EQUATIONS          169
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES           73  72 projected
+NON ZERO ELEMENTS           427     NON LINEAR N-Z             72
+CODE LENGTH                 434     CONSTANT POOL              22
+
+
+GENERATION TIME      =        0.016 SECONDS      4 MB  51.4.0 91cb996b WEX-WEI
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 6
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+Solution Report     SOLVE dynamic_economic_dispatch Using NLP From line 69
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   dynamic_economic_dispatch   OBJECTIVE  Z
+     TYPE    NLP                         DIRECTION  MINIMIZE
+     SOLVER  CONOPT                      FROM LINE  69
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE           362359.9475
+
+ RESOURCE USAGE, LIMIT          1.016 10000000000.000
+ ITERATION COUNT, LIMIT        14    2147483647
+ EVALUATION ERRORS              0             0
+--- *** This solver runs with a demo license. No commercial use.
+ 
+ 
+    C O N O P T   version 4.38.2
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 169 constraints and 73 variables
+    with 427 Jacobian elements, 72 of which are nonlinear.
+    The Hessian of the Lagrangian has 72 elements on the diagonal,
+    0 elements below the diagonal, and 72 nonlinear variables.
+ 
+    The pre-triangular part of the model has 75 constraints and 0 variables.
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has 93 constraints and 72 variables
+    with 210 Jacobian elements, 0 of which are nonlinear.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.045 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.002 =  4.4%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU cost_obj       26400.0000     26400.0000     26400.0000         1.0000      
+
+  cost_obj  Total daily generation cost
+
+---- EQU power_balance  Hourly demand balance constraint
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+t1        220.0000       220.0000       220.0000        38.3763      
+t2        200.0000       200.0000       200.0000        37.2373      
+t3        190.0000       190.0000       190.0000        36.6678      
+t4        180.0000       180.0000       180.0000        36.0983      
+t5        200.0000       200.0000       200.0000        37.2373      
+t6        230.0000       230.0000       230.0000        38.9458      
+t7        280.0000       280.0000       280.0000        41.7932      
+t8        340.0000       340.0000       340.0000        45.2102      
+t9        400.0000       400.0000       400.0000        48.6271      
+t10       450.0000       450.0000       450.0000        51.4746      
+t11       480.0000       480.0000       480.0000        53.1831      
+t12       490.0000       490.0000       490.0000        53.7525      
+t13       470.0000       470.0000       470.0000        52.6136      
+t14       460.0000       460.0000       460.0000        52.0441      
+t15       450.0000       450.0000       450.0000        51.4746      
+t16       480.0000       480.0000       480.0000        53.1831      
+t17       520.0000       520.0000       520.0000        55.4610      
+t18       550.0000       550.0000       550.0000        58.0000      
+t19       530.0000       530.0000       530.0000        56.0400      
+t20       500.0000       500.0000       500.0000        54.3220      
+t21       440.0000       440.0000       440.0000        50.9051      
+t22       380.0000       380.0000       380.0000        47.4881      
+t23       310.0000       310.0000       310.0000        43.5017      
+t24       250.0000       250.0000       250.0000        40.0847      
+
+---- EQU ramp_up_init  Ramp-up constraint for the initial time step (t1)
+
+          LOWER          LEVEL          UPPER         MARGINAL
+
+g1        -INF           76.5678        80.0000          .          
+g2        -INF           83.6017       120.0000          .          
+g3        -INF           59.8305       150.0000          .          
+
+---- EQU ramp_dn_init  Ramp-down constraint for the initial time step (t1)
+
+          LOWER          LEVEL          UPPER         MARGINAL
+
+g1        -INF          -76.5678       -20.0000          .          
+g2        -INF          -83.6017       -40.0000          .          
+g3        -INF          -59.8305       -50.0000          .          
+
+---- EQU ramp_up  Ramp-up limit for subsequent periods (t2 to t24)
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+g1.t2         -INF           -4.7458        30.0000          .          
+g1.t3         -INF           -2.3729        30.0000          .          
+g1.t4         -INF           -2.3729        30.0000          .          
+g1.t5         -INF            4.7458        30.0000          .          
+g1.t6         -INF            7.1186        30.0000          .          
+g1.t7         -INF           11.8644        30.0000          .          
+g1.t8         -INF           14.2373        30.0000          .          
+g1.t9         -INF           14.2373        30.0000          .          
+g1.t10        -INF           11.8644        30.0000          .          
+g1.t11        -INF            7.1186        30.0000          .          
+g1.t12        -INF            2.3729        30.0000          .          
+g1.t13        -INF           -4.7458        30.0000          .          
+g1.t14        -INF           -2.3729        30.0000          .          
+g1.t15        -INF           -2.3729        30.0000          .          
+g1.t16        -INF            7.1186        30.0000          .          
+g1.t17        -INF            9.4915        30.0000          .          
+g1.t18        -INF            2.2458        30.0000          .          
+g1.t19        -INF             .            30.0000          .          
+g1.t20        -INF           -6.9915        30.0000          .          
+g1.t21        -INF          -14.2373        30.0000          .          
+g1.t22        -INF          -14.2373        30.0000          .          
+g1.t23        -INF          -16.6102        30.0000          .          
+g1.t24        -INF          -14.2373        30.0000          .          
+g2.t2         -INF           -7.1186        40.0000          .          
+g2.t3         -INF           -3.5593        40.0000          .          
+g2.t4         -INF           -3.5593        40.0000          .          
+g2.t5         -INF            7.1186        40.0000          .          
+g2.t6         -INF           10.6780        40.0000          .          
+g2.t7         -INF           17.7966        40.0000          .          
+g2.t8         -INF           21.3559        40.0000          .          
+g2.t9         -INF           21.3559        40.0000          .          
+g2.t10        -INF           17.7966        40.0000          .          
+g2.t11        -INF           10.6780        40.0000          .          
+g2.t12        -INF            3.5593        40.0000          .          
+g2.t13        -INF           -7.1186        40.0000          .          
+g2.t14        -INF           -3.5593        40.0000          .          
+g2.t15        -INF           -3.5593        40.0000          .          
+g2.t16        -INF           10.6780        40.0000          .          
+g2.t17        -INF           14.2373        40.0000          .          
+g2.t18        -INF            9.6186        40.0000          .          
+g2.t19        -INF           -6.0000        40.0000          .          
+g2.t20        -INF          -10.7373        40.0000          .          
+g2.t21        -INF          -21.3559        40.0000          .          
+g2.t22        -INF          -21.3559        40.0000          .          
+g2.t23        -INF          -24.9153        40.0000          .          
+g2.t24        -INF          -21.3559        40.0000          .          
+g3.t2         -INF           -8.1356        50.0000          .          
+g3.t3         -INF           -4.0678        50.0000          .          
+g3.t4         -INF           -4.0678        50.0000          .          
+g3.t5         -INF            8.1356        50.0000          .          
+g3.t6         -INF           12.2034        50.0000          .          
+g3.t7         -INF           20.3390        50.0000          .          
+g3.t8         -INF           24.4068        50.0000          .          
+g3.t9         -INF           24.4068        50.0000          .          
+g3.t10        -INF           20.3390        50.0000          .          
+g3.t11        -INF           12.2034        50.0000          .          
+g3.t12        -INF            4.0678        50.0000          .          
+g3.t13        -INF           -8.1356        50.0000          .          
+g3.t14        -INF           -4.0678        50.0000          .          
+g3.t15        -INF           -4.0678        50.0000          .          
+g3.t16        -INF           12.2034        50.0000          .          
+g3.t17        -INF           16.2712        50.0000          .          
+g3.t18        -INF           18.1356        50.0000          .          
+g3.t19        -INF          -14.0000        50.0000          .          
+g3.t20        -INF          -12.2712        50.0000          .          
+g3.t21        -INF          -24.4068        50.0000          .          
+g3.t22        -INF          -24.4068        50.0000          .          
+g3.t23        -INF          -28.4746        50.0000          .          
+g3.t24        -INF          -24.4068        50.0000          .          
+
+---- EQU ramp_dn  Ramp-down limit for subsequent periods (t2 to t24)
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+g1.t2         -INF            4.7458        30.0000          .          
+g1.t3         -INF            2.3729        30.0000          .          
+g1.t4         -INF            2.3729        30.0000          .          
+g1.t5         -INF           -4.7458        30.0000          .          
+g1.t6         -INF           -7.1186        30.0000          .          
+g1.t7         -INF          -11.8644        30.0000          .          
+g1.t8         -INF          -14.2373        30.0000          .          
+g1.t9         -INF          -14.2373        30.0000          .          
+g1.t10        -INF          -11.8644        30.0000          .          
+g1.t11        -INF           -7.1186        30.0000          .          
+g1.t12        -INF           -2.3729        30.0000          .          
+g1.t13        -INF            4.7458        30.0000          .          
+g1.t14        -INF            2.3729        30.0000          .          
+g1.t15        -INF            2.3729        30.0000          .          
+g1.t16        -INF           -7.1186        30.0000          .          
+g1.t17        -INF           -9.4915        30.0000          .          
+g1.t18        -INF           -2.2458        30.0000          .          
+g1.t19        -INF             .            30.0000          .          
+g1.t20        -INF            6.9915        30.0000          .          
+g1.t21        -INF           14.2373        30.0000          .          
+g1.t22        -INF           14.2373        30.0000          .          
+g1.t23        -INF           16.6102        30.0000          .          
+g1.t24        -INF           14.2373        30.0000          .          
+g2.t2         -INF            7.1186        40.0000          .          
+g2.t3         -INF            3.5593        40.0000          .          
+g2.t4         -INF            3.5593        40.0000          .          
+g2.t5         -INF           -7.1186        40.0000          .          
+g2.t6         -INF           40.0000        40.0000         EPS         
+g2.t7         -INF          -17.7966        40.0000          .          
+g2.t8         -INF          -21.3559        40.0000          .          
+g2.t9         -INF          -21.3559        40.0000          .          
+g2.t10        -INF          -17.7966        40.0000          .          
+g2.t11        -INF          -10.6780        40.0000          .          
+g2.t12        -INF           -3.5593        40.0000          .          
+g2.t13        -INF            7.1186        40.0000          .          
+g2.t14        -INF            3.5593        40.0000          .          
+g2.t15        -INF            3.5593        40.0000          .          
+g2.t16        -INF          -10.6780        40.0000          .          
+g2.t17        -INF          -14.2373        40.0000          .          
+g2.t18        -INF           -9.6186        40.0000          .          
+g2.t19        -INF            6.0000        40.0000          .          
+g2.t20        -INF           10.7373        40.0000          .          
+g2.t21        -INF           21.3559        40.0000          .          
+g2.t22        -INF           21.3559        40.0000          .          
+g2.t23        -INF           24.9153        40.0000          .          
+g2.t24        -INF           21.3559        40.0000          .          
+g3.t2         -INF            8.1356        50.0000          .          
+g3.t3         -INF            4.0678        50.0000          .          
+g3.t4         -INF            4.0678        50.0000          .          
+g3.t5         -INF           -8.1356        50.0000          .          
+g3.t6         -INF          -12.2034        50.0000          .          
+g3.t7         -INF          -20.3390        50.0000          .          
+g3.t8         -INF          -24.4068        50.0000          .          
+g3.t9         -INF          -24.4068        50.0000          .          
+g3.t10        -INF          -20.3390        50.0000          .          
+g3.t11        -INF          -12.2034        50.0000          .          
+g3.t12        -INF           -4.0678        50.0000          .          
+g3.t13        -INF            8.1356        50.0000          .          
+g3.t14        -INF            4.0678        50.0000          .          
+g3.t15        -INF            4.0678        50.0000          .          
+g3.t16        -INF          -12.2034        50.0000          .          
+g3.t17        -INF          -16.2712        50.0000          .          
+g3.t18        -INF          -18.1356        50.0000          .          
+g3.t19        -INF           14.0000        50.0000          .          
+g3.t20        -INF           12.2712        50.0000          .          
+g3.t21        -INF           24.4068        50.0000          .          
+g3.t22        -INF           24.4068        50.0000          .          
+g3.t23        -INF           28.4746        50.0000          .          
+g3.t24        -INF           24.4068        50.0000          .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR Z                 -INF       362359.9475        +INF             .          
+
+  Z  Total generation cost over 24 hours ($)
+
+---- VAR P  Power output of unit g at time period t (MW)
+
+              LOWER          LEVEL          UPPER         MARGINAL
+
+g1.t1         20.0000        76.5678       150.0000         EPS         
+g1.t2         20.0000        71.8220       150.0000          .          
+g1.t3         20.0000        69.4492       150.0000          .          
+g1.t4         20.0000        67.0763       150.0000          .          
+g1.t5         20.0000        71.8220       150.0000          .          
+g1.t6         20.0000        78.9407       150.0000         EPS         
+g1.t7         20.0000        90.8051       150.0000         EPS         
+g1.t8         20.0000       105.0424       150.0000          .          
+g1.t9         20.0000       119.2797       150.0000          .          
+g1.t10        20.0000       131.1441       150.0000         EPS         
+g1.t11        20.0000       138.2627       150.0000         EPS         
+g1.t12        20.0000       140.6356       150.0000         EPS         
+g1.t13        20.0000       135.8898       150.0000         EPS         
+g1.t14        20.0000       133.5169       150.0000         EPS         
+g1.t15        20.0000       131.1441       150.0000         EPS         
+g1.t16        20.0000       138.2627       150.0000         EPS         
+g1.t17        20.0000       147.7542       150.0000         EPS         
+g1.t18        20.0000       150.0000       150.0000        -2.0000      
+g1.t19        20.0000       150.0000       150.0000        -0.0400      
+g1.t20        20.0000       143.0085       150.0000         EPS         
+g1.t21        20.0000       128.7712       150.0000         EPS         
+g1.t22        20.0000       114.5339       150.0000         EPS         
+g1.t23        20.0000        97.9237       150.0000         EPS         
+g1.t24        20.0000        83.6864       150.0000         EPS         
+g2.t1         30.0000        83.6017       200.0000         EPS         
+g2.t2         30.0000        76.4831       200.0000         EPS         
+g2.t3         30.0000        72.9237       200.0000         EPS         
+g2.t4         30.0000        69.3644       200.0000         EPS         
+g2.t5         30.0000        76.4831       200.0000          .          
+g2.t6         30.0000        87.1610       200.0000         EPS         
+g2.t7         30.0000       104.9576       200.0000         EPS         
+g2.t8         30.0000       126.3136       200.0000         EPS         
+g2.t9         30.0000       147.6695       200.0000         EPS         
+g2.t10        30.0000       165.4661       200.0000         EPS         
+g2.t11        30.0000       176.1441       200.0000         EPS         
+g2.t12        30.0000       179.7034       200.0000         EPS         
+g2.t13        30.0000       172.5847       200.0000         EPS         
+g2.t14        30.0000       169.0254       200.0000         EPS         
+g2.t15        30.0000       165.4661       200.0000         EPS         
+g2.t16        30.0000       176.1441       200.0000         EPS         
+g2.t17        30.0000       190.3814       200.0000         EPS         
+g2.t18        30.0000       200.0000       200.0000        -1.0000      
+g2.t19        30.0000       194.0000       200.0000         EPS         
+g2.t20        30.0000       183.2627       200.0000         EPS         
+g2.t21        30.0000       161.9068       200.0000         EPS         
+g2.t22        30.0000       140.5508       200.0000         EPS         
+g2.t23        30.0000       115.6356       200.0000         EPS         
+g2.t24        30.0000        94.2797       200.0000         EPS         
+g3.t1         40.0000        59.8305       300.0000          .          
+g3.t2         40.0000        51.6949       300.0000         EPS         
+g3.t3         40.0000        47.6271       300.0000         EPS         
+g3.t4         40.0000        43.5593       300.0000         EPS         
+g3.t5         40.0000        51.6949       300.0000         EPS         
+g3.t6         40.0000        63.8983       300.0000          .          
+g3.t7         40.0000        84.2373       300.0000          .          
+g3.t8         40.0000       108.6441       300.0000         EPS         
+g3.t9         40.0000       133.0508       300.0000         EPS         
+g3.t10        40.0000       153.3898       300.0000          .          
+g3.t11        40.0000       165.5932       300.0000          .          
+g3.t12        40.0000       169.6610       300.0000          .          
+g3.t13        40.0000       161.5254       300.0000          .          
+g3.t14        40.0000       157.4576       300.0000          .          
+g3.t15        40.0000       153.3898       300.0000          .          
+g3.t16        40.0000       165.5932       300.0000          .          
+g3.t17        40.0000       181.8644       300.0000          .          
+g3.t18        40.0000       200.0000       300.0000          .          
+g3.t19        40.0000       186.0000       300.0000          .          
+g3.t20        40.0000       173.7288       300.0000          .          
+g3.t21        40.0000       149.3220       300.0000          .          
+g3.t22        40.0000       124.9153       300.0000          .          
+g3.t23        40.0000        96.4407       300.0000          .          
+g3.t24        40.0000        72.0339       300.0000          .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 51.4.0  91cb996b Nov 10, 2025          WEX-WEI x86 64bit/MS Windows - 10/20/26 13:21:12 Page 7
+Multi-Period Economic Dispatch with Generator Ramp-Rate Constraints
+E x e c u t i o n
+
+
+----     72 VARIABLE P.L  Power output of unit g at time period t (MW)
+
+            t1          t2          t3          t4          t5          t6          t7          t8          t9         t10         t11         t12         t13         t14         t15         t16         t17         t18         t19         t20         t21         t22         t23         t24
+
+g1      76.568      71.822      69.449      67.076      71.822      78.941      90.805     105.042     119.280     131.144     138.263     140.636     135.890     133.517     131.144     138.263     147.754     150.000     150.000     143.008     128.771     114.534      97.924      83.686
+g2      83.602      76.483      72.924      69.364      76.483      87.161     104.958     126.314     147.669     165.466     176.144     179.703     172.585     169.025     165.466     176.144     190.381     200.000     194.000     183.263     161.907     140.551     115.636      94.280
+g3      59.831      51.695      47.627      43.559      51.695      63.898      84.237     108.644     133.051     153.390     165.593     169.661     161.525     157.458     153.390     165.593     181.864     200.000     186.000     173.729     149.322     124.915      96.441      72.034
+
+
+----     72 VARIABLE Z.L                   =   362359.947  Total generation cost over 24 hours ($)
+
+**** REPORT FILE SUMMARY
+
+results E:\New folder\dispatch_results.csv
+
+
+EXECUTION TIME       =        1.375 SECONDS      6 MB  51.4.0 91cb996b WEX-WEI
+
+
+USER: Naimul Islam Udoy                              G261020+0003Cc-GEN
+      0424062107@eee.buet.ac.bd                               FLP003633
+
+
+**** FILE SUMMARY
+
+Input      E:\New folder\Multi Period Economic Load Dispatch with Generator Ramp-rate Constraints.gms
+Output     E:\New folder\Multi Period Economic Load Dispatch with Generator Ramp-rate Constraints.lst

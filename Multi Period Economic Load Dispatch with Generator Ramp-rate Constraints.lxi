@@ -1,0 +1,25 @@
+B 3 C o m p i l a t i o n
+B 92 Equation Listing    SOLVE dynamic_economic_dispatch Using NLP From line 69
+D 95 cost_obj
+D 100 power_balance
+D 111 ramp_up_init
+D 120 ramp_dn_init
+D 129 ramp_up
+D 140 ramp_dn
+B 152 Column Listing      SOLVE dynamic_economic_dispatch Using NLP From line 69
+E 155 Z
+E 162 P
+B 197 Range Statistics    SOLVE dynamic_economic_dispatch Using NLP From line 69
+B 208 Model Statistics    SOLVE dynamic_economic_dispatch Using NLP From line 69
+B 222 Solution Report     SOLVE dynamic_economic_dispatch Using NLP From line 69
+F 272 cost_obj
+F 276 power_balance
+F 305 ramp_up_init
+F 313 ramp_dn_init
+F 321 ramp_up
+F 395 ramp_dn
+G 471 Z
+G 475 P
+B 559 E x e c u t i o n
+I 559 P
+I 570 Z
